@@ -7,6 +7,7 @@ import setproctitle
 import numpy as np
 from pathlib import Path
 import torch
+import uuid
 from onpolicy.config import get_config
 from onpolicy.envs.starcraft2.StarCraft2_Env import StarCraft2Env
 from onpolicy.envs.starcraft2.smac_maps import get_map_params
@@ -22,7 +23,7 @@ def make_train_env(all_args):
             else:
                 print("Can not support the " + all_args.env_name + "environment.")
                 raise NotImplementedError
-            env.seed(all_args.seed + rank * 1000)
+            # env.seed(all_args.seed + rank * 1000)
             return env
 
         return init_env
@@ -41,7 +42,7 @@ def make_eval_env(all_args):
             else:
                 print("Can not support the " + all_args.env_name + "environment.")
                 raise NotImplementedError
-            env.seed(all_args.seed * 50000 + rank * 10000)
+            # env.seed(all_args.seed * 50000 + rank * 10000)
             return env
 
         return init_env
@@ -70,6 +71,8 @@ def parse_args(args, parser):
 
     return all_args
 
+def generate_tag(algo_name, map_name):
+    return algo_name + "-" + map_name + "-" + uuid.uuid4().hex[:6]
 
 def main(args):
     parser = get_config()
@@ -103,13 +106,11 @@ def main(args):
 
     if all_args.use_wandb:
         run = wandb.init(config=all_args,
-                         project=all_args.env_name,
-                         entity=all_args.user_name,
+                         project="improve_smac",
+                         entity="benellis3",
                          notes=socket.gethostname(),
-                         name=str(all_args.algorithm_name) + "_" +
-                              str(all_args.experiment_name) +
-                              "_seed" + str(all_args.seed),
-                         group=all_args.map_name,
+                         name=generate_tag(all_args.algorithm_name, all_args.map_name),
+                         group=all_args.experiment_name,
                          dir=str(run_dir),
                          job_type="training",
                          reinit=True)
@@ -132,9 +133,9 @@ def main(args):
             all_args.user_name))
 
     # seed
-    torch.manual_seed(all_args.seed)
-    torch.cuda.manual_seed_all(all_args.seed)
-    np.random.seed(all_args.seed)
+    # torch.manual_seed(all_args.seed)
+    # torch.cuda.manual_seed_all(all_args.seed)
+    # np.random.seed(all_args.seed)
 
     # env
     envs = make_train_env(all_args)
